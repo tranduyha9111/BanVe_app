@@ -1,30 +1,83 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Form,
   FormField,
   FormItem,
   FormLabel,
   FormControl,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { User, Shield, Mail, Lock } from "lucide-react";
 import Link from "next/link";
+import { register } from "../../../services/auth";
+import { toast } from "sonner"; // hoặc "react-hot-toast"
+
+// ✅ Validation schema với Zod
+const registerSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email không được để trống")
+    .email("Email không hợp lệ"),
+  name: z
+    .string()
+    .min(2, "Họ tên phải có ít nhất 2 ký tự")
+    .max(50, "Họ tên không được quá 50 ký tự"),
+  password: z
+    .string()
+    .min(6, "Mật khẩu phải có ít nhất 6 ký tự")
+    .max(100, "Mật khẩu không được quá 100 ký tự"),
+  confirmPassword: z.string().min(1, "Vui lòng xác nhận mật khẩu"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Mật khẩu xác nhận không khớp",
+  path: ["confirmPassword"],
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 type RegisterFormProps = {
-  onNext: () => void;
+  onNext: (email: string) => void;
 };
 
 export default function RegisterForm({ onNext }: RegisterFormProps) {
-  const form = useForm({
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
       email: "",
+      name: "",
       password: "",
       confirmPassword: "",
     },
+    mode: "onBlur", // ✅ Validate khi blur
   });
+
+  const { isSubmitting } = form.formState;
+
+  const onSubmit = async (data: RegisterFormValues) => {
+    try {
+      await register({
+        email: data.email.trim(),
+        username: data.name.trim(),
+        password: data.password,
+      });
+
+      toast.success("Đăng ký thành công! Vui lòng kiểm tra email.");
+      onNext(data.email.trim());
+    } catch (error: any) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("REGISTER ERROR:", error);
+      }
+
+      const errorMessage =
+        error?.response?.data?.message ||
+        "Đăng ký thất bại, vui lòng thử lại";
+      toast.error(errorMessage);
+    }
+  };
 
   return (
     <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
@@ -32,7 +85,7 @@ export default function RegisterForm({ onNext }: RegisterFormProps) {
         <div className="space-y-8">
           <h1 className="text-xl text-center lg:text-2xl font-bold">Đăng ký</h1>
 
-          {/* STEP HEADER (GIỮ NGUYÊN UI) */}
+          {/* STEP HEADER */}
           <div className="flex justify-center">
             <div className="flex items-center flex-1 justify-between gap-2">
               <div className="flex items-center">
@@ -61,13 +114,7 @@ export default function RegisterForm({ onNext }: RegisterFormProps) {
 
           {/* FORM */}
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit((data) => {
-                console.log(data);
-                onNext(); // 👉 chuyển sang OTP
-              })}
-              className="space-y-4"
-            >
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {/* HỌ TÊN */}
               <FormField
                 control={form.control}
@@ -82,9 +129,11 @@ export default function RegisterForm({ onNext }: RegisterFormProps) {
                           {...field}
                           placeholder="Nguyễn Văn A"
                           className="pl-10 h-10"
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                     </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -104,9 +153,11 @@ export default function RegisterForm({ onNext }: RegisterFormProps) {
                           type="email"
                           placeholder="email@vidu.com"
                           className="pl-10 h-10"
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                     </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -124,11 +175,13 @@ export default function RegisterForm({ onNext }: RegisterFormProps) {
                         <Input
                           {...field}
                           type="password"
-                          placeholder="Nhập mật khẩu"
+                          placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
                           className="pl-10 h-10"
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                     </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -148,23 +201,26 @@ export default function RegisterForm({ onNext }: RegisterFormProps) {
                           type="password"
                           placeholder="Nhập lại mật khẩu"
                           className="pl-10 h-10"
+                          disabled={isSubmitting}
                         />
                       </FormControl>
                     </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
 
               <button
                 type="submit"
-                className="w-full h-10 rounded-full bg-primary text-primary-foreground mt-6"
+                disabled={isSubmitting}
+                className="w-full h-10 rounded-full bg-primary text-primary-foreground mt-6 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
-                Tiếp tục
+                {isSubmitting ? "Đang xử lý..." : "Tiếp tục"}
               </button>
 
               <div className="text-center text-sm">
                 Đã có tài khoản?
-                <Link href="/auth/login" className="ml-1 text-primary">
+                <Link href="/auth/login" className="ml-1 text-primary hover:underline">
                   Đăng nhập ngay
                 </Link>
               </div>

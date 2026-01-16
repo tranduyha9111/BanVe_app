@@ -1,42 +1,98 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Mail, Lock } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
+import { toast } from "sonner";
+import { useState } from "react";
+import axios from "axios";
+// ✅ Validation schema
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email không được để trống")
+    .email("Email không hợp lệ"),
+  password: z
+    .string()
+    .min(1, "Mật khẩu không được để trống")
+    .min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
+});
 
-type LoginFormValues = {
-  email: string;
-  password: string;
-};
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
+  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  const { login } = useAuth();
+
   const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
     },
+    mode: "onBlur",
   });
+
+  const { isSubmitting } = form.formState;
+
+ const onSubmit = async (data: LoginFormValues) => {
+  try {
+    await login(data.email.trim(), data.password);
+
+    toast.success("Đăng nhập thành công! 🎉");
+
+    setTimeout(() => {
+      router.replace("/");
+    }, 500);
+  } catch (err: unknown) {
+    let errorMessage = "Email hoặc mật khẩu không chính xác";
+
+    if (axios.isAxiosError(err)) {
+      errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        errorMessage;
+
+      if (process.env.NODE_ENV === "development") {
+        console.error("Login axios error:", {
+          status: err.response?.status,
+          data: err.response?.data,
+        });
+      }
+    } else {
+      console.error("Login unknown error:", err);
+    }
+
+    toast.error(errorMessage);
+  }
+};
 
   return (
     <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
       <div className="w-full max-w-md space-y-8">
-        <h1 className="text-xl text-center lg:text-2xl font-bold">Đăng Nhập</h1>
+        <div className="text-center space-y-2">
+          <h1 className="text-xl lg:text-2xl font-bold">Đăng Nhập</h1>
+          <p className="text-sm text-muted-foreground">
+            Chào mừng bạn trở lại!
+          </p>
+        </div>
 
         <Form {...form}>
-          <form
-            className="space-y-4"
-            onSubmit={form.handleSubmit((data) => {
-              console.log(data);
-            })}
-          >
+          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
             {/* EMAIL */}
             <FormField
               control={form.control}
@@ -52,11 +108,14 @@ export default function LoginForm() {
                       <Input
                         {...field}
                         type="email"
+                        autoComplete="email"
                         placeholder="email@vidu.com"
                         className="pl-10 h-10"
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                   </div>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -69,8 +128,11 @@ export default function LoginForm() {
                 <FormItem className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <FormLabel>Mật khẩu</FormLabel>
-                    <Link href="/auth/forgot" className="text-sm text-primary">
-                      Quên mật khẩu ?
+                    <Link
+                      href="/auth/forgot"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Quên mật khẩu?
                     </Link>
                   </div>
 
@@ -80,27 +142,47 @@ export default function LoginForm() {
                     <FormControl>
                       <Input
                         {...field}
-                        type="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
                         placeholder="Nhập mật khẩu"
-                        className="pl-10 h-10"
+                        className="pl-10 pr-10 h-10"
+                        disabled={isSubmitting}
                       />
                     </FormControl>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      disabled={isSubmitting}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
                   </div>
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
             <button
               type="submit"
-              className="w-full h-10 rounded-full bg-primary text-white"
+              disabled={isSubmitting}
+              className="w-full h-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Đăng nhập
+              {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
 
             <div className="text-center text-sm">
               Chưa có tài khoản?
-              <Link href="/auth/register" className="ml-1 text-primary">
-                Đăng kí ngay
+              <Link
+                href="/auth/register"
+                className="ml-1 text-primary hover:underline"
+              >
+                Đăng ký ngay
               </Link>
             </div>
           </form>

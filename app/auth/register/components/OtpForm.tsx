@@ -1,31 +1,123 @@
 "use client";
 
-import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { Check, Shield } from "lucide-react";
 import { useForm } from "react-hook-form";
-
 import { Form, FormControl, FormItem, FormLabel } from "@/components/ui/form";
-
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { verifyOtp, resendOtp } from "../../../services/auth";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { toast } from "sonner"; // hoặc "react-hot-toast"
 
 interface OtpFormProps {
+  email: string;
   onBack: () => void;
 }
-export default function OtpForm({ onBack }: OtpFormProps) {
-  const form = useForm({
+
+type OtpFormValues = {
+  otp: string;
+};
+
+export default function OtpForm({ email, onBack }: OtpFormProps) {
+  const router = useRouter();
+  const [isResending, setIsResending] = useState(false);
+  const [countdown, setCountdown] = useState(0); // ✅ Countdown timer
+
+  const form = useForm<OtpFormValues>({
     defaultValues: {
       otp: "",
     },
   });
 
+  const { isSubmitting } = form.formState;
+  const otpValue = form.watch("otp");
+
+  // ✅ Auto-submit khi đủ 6 số
+  useEffect(() => {
+    if (otpValue.length === 6 && !isSubmitting) {
+      form.handleSubmit(onSubmit)();
+    }
+  }, [otpValue]);
+
+  // ✅ Countdown timer
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  // Submit OTP
+  const onSubmit = async (data: OtpFormValues) => {
+    if (data.otp.length !== 6) {
+      toast.error("Vui lòng nhập đủ 6 chữ số OTP");
+      return;
+    }
+
+    try {
+      await verifyOtp({ email, otp: data.otp });
+      toast.success("Xác thực thành công! 🎉");
+      
+      // ✅ Delay nhỏ để user thấy toast
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 500);
+    } catch (error: any) {
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
+
+      const errorMessage =
+        error?.response?.data?.message ||
+        "Mã OTP không đúng hoặc đã hết hạn";
+      toast.error(errorMessage);
+      
+      // ✅ Clear OTP để user nhập lại
+      form.setValue("otp", "");
+    }
+  };
+
+  // Resend OTP
+  const handleResend = async () => {
+    if (!email) {
+      toast.error("Email không hợp lệ");
+      return;
+    }
+
+    if (countdown > 0) {
+      toast.error(`Vui lòng đợi ${countdown}s trước khi gửi lại`);
+      return;
+    }
+
+    try {
+      setIsResending(true);
+      await resendOtp(email);
+      form.setValue("otp", "");
+      setCountdown(60); // ✅ 60s cooldown
+      toast.success("Mã OTP mới đã được gửi đến email của bạn");
+    } catch (error: any) {
+      if (process.env.NODE_ENV === "development") {
+        console.error(error);
+      }
+
+      const errorMessage =
+        error?.response?.data?.message ||
+        "Không thể gửi lại mã OTP, vui lòng thử lại sau";
+      toast.error(errorMessage);
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
       <div className="w-full max-w-md space-y-8">
-        <h1 className="text-xl text-center lg:text-2xl font-bold">Đăng kí</h1>
+        <h1 className="text-xl text-center lg:text-2xl font-bold">Đăng ký</h1>
 
         {/* STEP */}
         <div className="flex items-center justify-between gap-2">
@@ -61,28 +153,36 @@ export default function OtpForm({ onBack }: OtpFormProps) {
           <p className="text-sm text-muted-foreground">
             Chúng tôi đã gửi mã xác thực 6 chữ số tới
           </p>
-          <p className="text-sm font-medium">admins@meu-solutions.com</p>
+          <p className="text-sm font-medium">{email}</p>
         </div>
 
         {/* OTP FORM */}
         <Form {...form}>
-          <form className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormItem>
               <FormLabel className="sr-only">Mã OTP</FormLabel>
-
               <FormControl>
                 <div className="flex justify-center">
                   <InputOTP
                     maxLength={6}
-                    pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+                    pattern={REGEXP_ONLY_DIGITS}
                     autoComplete="one-time-code"
+                    value={otpValue}
+                    onChange={(value) =>
+                      form.setValue("otp", value, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      })
+                    }
+                    disabled={isSubmitting}
                   >
                     <InputOTPGroup>
                       {Array.from({ length: 6 }).map((_, i) => (
                         <InputOTPSlot
                           key={i}
                           index={i}
-                          className="h-9 w-9 border text-sm shadow-sm"
+                          className="h-12 w-12 border text-base shadow-sm"
                         />
                       ))}
                     </InputOTPGroup>
@@ -90,30 +190,46 @@ export default function OtpForm({ onBack }: OtpFormProps) {
                 </div>
               </FormControl>
             </FormItem>
+
+            {/* Resend OTP */}
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Không nhận được mã?
+              </p>
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={isResending || countdown > 0 || isSubmitting}
+                className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+              >
+                {isResending
+                  ? "Đang gửi..."
+                  : countdown > 0
+                  ? `Gửi lại mã (${countdown}s)`
+                  : "Gửi lại mã"}
+              </button>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-4 md:gap-6">
+              <button
+                type="button"
+                onClick={onBack}
+                disabled={isSubmitting}
+                className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium border border-input bg-background shadow-sm hover:bg-primary hover:text-primary-foreground px-4 py-2 flex-1 h-10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Quay lại
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || otpValue.length !== 6}
+                className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-primary/90 px-4 py-2 flex-1 h-10 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              >
+                {isSubmitting ? "Đang xác thực..." : "Xác thực"}
+              </button>
+            </div>
           </form>
-          <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              không nhận được mã ?
-            </p>
-            <button className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:bg-muted disabled:text-gray-500 disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 underline-offset-4 p-0 h-auto font-medium text-primary hover:underline">
-              Gửi lại mã
-            </button>
-          </div>
-          <div className="flex gap-4 md:gap-6">
-            <button
-              className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:bg-muted disabled:text-gray-500 disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background shadow-sm hover:bg-primary hover:text-primary-foreground px-4 py-2 flex-1 h-10"
-              type="button"
-              onClick={onBack}
-            >
-              Quay lại
-            </button>
-            <button
-              className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:bg-muted disabled:text-gray-500 disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground shadow hover:bg-primary/90 px-4 py-2 flex-1 h-10"
-              type="button"
-            >
-              Xác thực
-            </button>
-          </div>
         </Form>
       </div>
     </div>
