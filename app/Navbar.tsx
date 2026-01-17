@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "@/app/context/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -36,8 +36,7 @@ export default function Navbar() {
   const [visible, setVisible] = useState(false);
   const { user, loading, logout } = useAuth();
   const router = useRouter();
-  
-  
+
   const handleLogout = async () => {
     await logout();
     router.replace("/");
@@ -108,10 +107,11 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 h-9 lg:h-10 px-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-primary/20">
                     <Avatar className="h-7 w-7 lg:h-8 lg:w-8">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {user.username?.charAt(0)?.toUpperCase()}
+                      <AvatarFallback className="bg-white border border-gray-400 text-gray-800 text-sm font-medium">
+                        {user?.username?.charAt(0)?.toUpperCase() ?? "?"}
                       </AvatarFallback>
                     </Avatar>
+
                     <span className="hidden md:inline text-sm font-medium pr-2">
                       {user.username}
                     </span>

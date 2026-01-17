@@ -2,18 +2,19 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import * as authApi from "@/app/services/auth";
+import { toast } from "sonner";
 
-export type User = {
+type User = {
   id: string;
   email: string;
-  username: string;
+  username?: string;
 };
 
 type AuthContextType = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (user: User) => void;
 };
 
@@ -23,19 +24,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  /* ===== INIT AUTH ===== */
+  // ================= INIT AUTH =================
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const accessToken = localStorage.getItem("accessToken");
-        const storedUser = localStorage.getItem("user");
+        const token = localStorage.getItem("accessToken");
+        if (!token) return;
 
-        if (!accessToken || !storedUser) return;
+        // ✅ LẤY USER TỪ PROFILE
+        const profile = await authApi.getProfile();
 
-        setUser(JSON.parse(storedUser));
-
-        // verify token ngầm
-        await authApi.getProfile();
+        setUser(profile);
+        localStorage.setItem("user", JSON.stringify(profile));
       } catch {
         localStorage.clear();
         setUser(null);
@@ -47,29 +47,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  /* ===== LOGIN ===== */
+  // ================= LOGIN =================
   const login = async (email: string, password: string) => {
     const res = await authApi.login({ email, password });
 
-    localStorage.setItem("accessToken", res.accessToken);
-    localStorage.setItem("refreshToken", res.refreshToken);
-    localStorage.setItem("user", JSON.stringify(res.user));
+    const { accessToken, refreshToken } = res.data;
 
-    setUser(res.user);
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+
+    // ✅ GỌI PROFILE NGAY SAU LOGIN
+    const profile = await authApi.getProfile();
+
+    setUser(profile);
+    localStorage.setItem("user", JSON.stringify(profile));
   };
 
-  /* ===== LOGOUT ===== */
-  const logout = () => {
-    localStorage.clear();
-    setUser(null);
+  // ================= LOGOUT =================
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      localStorage.clear();
+      setUser(null);
+      toast.success("Đăng xuất thành công");
+    }
   };
 
-  const updateUser = (updatedUser: User) => {
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
+  // ================= UPDATE USER =================
+  const updateUser = (u: User) => {
+    setUser(u);
+    localStorage.setItem("user", JSON.stringify(u));
   };
-
-  if (loading) return null;
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
@@ -78,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ===== HOOK ===== */
+// ================= HOOK =================
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) {

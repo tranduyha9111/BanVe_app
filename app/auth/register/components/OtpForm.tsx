@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/input-otp";
 import { verifyOtp, resendOtp } from "../../../services/auth";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { toast } from "sonner"; // hoặc "react-hot-toast"
+import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 interface OtpFormProps {
   email: string;
@@ -26,89 +26,80 @@ type OtpFormValues = {
 export default function OtpForm({ email, onBack }: OtpFormProps) {
   const router = useRouter();
   const [isResending, setIsResending] = useState(false);
-  const [countdown, setCountdown] = useState(0); // ✅ Countdown timer
+  const [countdown, setCountdown] = useState(0);
+  const submittedRef = useRef(false);
+
+  const COUNTDOWN_KEY = `otp_countdown_${email}`;
 
   const form = useForm<OtpFormValues>({
-    defaultValues: {
-      otp: "",
-    },
+    defaultValues: { otp: "" },
   });
 
   const { isSubmitting } = form.formState;
   const otpValue = form.watch("otp");
 
-  // ✅ Auto-submit khi đủ 6 số
+  /* ===== RESET WHEN EMAIL CHANGE ===== */
   useEffect(() => {
-    if (otpValue.length === 6 && !isSubmitting) {
+    submittedRef.current = false;
+    form.reset({ otp: "" });
+  }, [email, form]);
+
+  /* ===== AUTO SUBMIT ===== */
+  useEffect(() => {
+    if (otpValue.length === 6 && !submittedRef.current && !isSubmitting) {
+      submittedRef.current = true;
       form.handleSubmit(onSubmit)();
     }
-  }, [otpValue]);
+  }, [otpValue, isSubmitting]);
 
-  // ✅ Countdown timer
+  /* ===== LOAD COUNTDOWN ===== */
+  useEffect(() => {
+    const saved = localStorage.getItem(COUNTDOWN_KEY);
+    if (saved) setCountdown(Number(saved));
+  }, [COUNTDOWN_KEY]);
+
+  /* ===== COUNTDOWN ===== */
   useEffect(() => {
     if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      localStorage.setItem(COUNTDOWN_KEY, countdown.toString());
+      const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
       return () => clearTimeout(timer);
+    } else {
+      localStorage.removeItem(COUNTDOWN_KEY);
     }
-  }, [countdown]);
+  }, [countdown, COUNTDOWN_KEY]);
 
-  // Submit OTP
+  /* ===== SUBMIT OTP ===== */
   const onSubmit = async (data: OtpFormValues) => {
-    if (data.otp.length !== 6) {
-      toast.error("Vui lòng nhập đủ 6 chữ số OTP");
-      return;
-    }
+    if (data.otp.length !== 6) return;
 
     try {
       await verifyOtp({ email, otp: data.otp });
       toast.success("Xác thực thành công! 🎉");
-      
-      // ✅ Delay nhỏ để user thấy toast
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 500);
-    } catch (error: any) {
-      if (process.env.NODE_ENV === "development") {
-        console.error(error);
-      }
 
-      const errorMessage =
-        error?.response?.data?.message ||
-        "Mã OTP không đúng hoặc đã hết hạn";
-      toast.error(errorMessage);
-      
-      // ✅ Clear OTP để user nhập lại
+      setTimeout(() => router.push("/auth/login"), 500);
+    } catch (error: any) {
+      submittedRef.current = false;
       form.setValue("otp", "");
+      toast.error(
+        error?.response?.data?.message || "Mã OTP không đúng hoặc đã hết hạn"
+      );
     }
   };
 
-  // Resend OTP
+  /* ===== RESEND ===== */
   const handleResend = async () => {
-    if (!email) {
-      toast.error("Email không hợp lệ");
-      return;
-    }
-
-    if (countdown > 0) {
-      toast.error(`Vui lòng đợi ${countdown}s trước khi gửi lại`);
-      return;
-    }
+    if (countdown > 0) return;
 
     try {
       setIsResending(true);
       await resendOtp(email);
+      submittedRef.current = false;
       form.setValue("otp", "");
-      setCountdown(60); // ✅ 60s cooldown
-      toast.success("Mã OTP mới đã được gửi đến email của bạn");
+      setCountdown(60);
+      toast.success("Mã OTP mới đã được gửi");
     } catch (error: any) {
-      if (process.env.NODE_ENV === "development") {
-        console.error(error);
-      }
-
-      const errorMessage =
-        error?.response?.data?.message ||
-        "Không thể gửi lại mã OTP, vui lòng thử lại sau";
-      toast.error(errorMessage);
+      toast.error(error?.response?.data?.message || "Không thể gửi lại mã OTP");
     } finally {
       setIsResending(false);
     }

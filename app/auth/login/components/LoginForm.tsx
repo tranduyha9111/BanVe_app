@@ -14,21 +14,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { toast } from "sonner";
 import { useState } from "react";
-import axios from "axios";
-// ✅ Validation schema
+
 const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email không được để trống")
-    .email("Email không hợp lệ"),
-  password: z
-    .string()
-    .min(1, "Mật khẩu không được để trống")
-    .min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
+  email: z.string().min(1).email(),
+  password: z.string().min(6),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -36,50 +29,28 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-    mode: "onBlur",
+    defaultValues: { email: "", password: "" },
   });
 
   const { isSubmitting } = form.formState;
 
- const onSubmit = async (data: LoginFormValues) => {
-  try {
-    await login(data.email.trim(), data.password);
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+      await login(data.email.trim(), data.password);
+      toast.success("Đăng nhập thành công! 🎉");
 
-    toast.success("Đăng nhập thành công! 🎉");
-
-    setTimeout(() => {
-      router.replace("/");
-    }, 500);
-  } catch (err: unknown) {
-    let errorMessage = "Email hoặc mật khẩu không chính xác";
-
-    if (axios.isAxiosError(err)) {
-      errorMessage =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        errorMessage;
-
-      if (process.env.NODE_ENV === "development") {
-        console.error("Login axios error:", {
-          status: err.response?.status,
-          data: err.response?.data,
-        });
-      }
-    } else {
-      console.error("Login unknown error:", err);
+      const returnUrl = searchParams.get("returnUrl") || "/";
+      router.replace(returnUrl);
+      router.refresh(); // ⭐ DÒNG QUAN TRỌNG
+    } catch {
+      toast.error("Email hoặc mật khẩu không chính xác");
     }
-
-    toast.error(errorMessage);
-  }
-};
+  };
 
   return (
     <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
@@ -156,11 +127,7 @@ export default function LoginForm() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       disabled={isSubmitting}
                     >
-                      {showPassword ? (
-                        <EyeOff size={18} />
-                      ) : (
-                        <Eye size={18} />
-                      )}
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                   <FormMessage />

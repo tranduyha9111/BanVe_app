@@ -15,13 +15,13 @@ export default function ClientLayout({
   const isAuthPage = pathname.startsWith("/auth");
 
   return (
-    // <AuthProvider>
+    <AuthProvider>
       <div className="min-h-screen bg-background">
         {!isAuthPage && <Navbar />}
         {children}
         {!isAuthPage && <Footer />}
         <Toaster position="top-center" richColors duration={3000} />
       </div>
-    // </AuthProvider>
+    </AuthProvider>
   );
 }
