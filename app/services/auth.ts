@@ -25,10 +25,7 @@ export const resetPassword = (payload: {
 }) => publicApi.post("/api/auth/reset-password", payload).then((r) => r.data);
 
 /* ===== LOGIN ===== */
-export const login = async (payload: {
-  email: string;
-  password: string;
-}) => {
+export const login = async (payload: { email: string; password: string }) => {
   const res = await publicApi.post("/api/auth/login", payload);
   return res.data;
 };
