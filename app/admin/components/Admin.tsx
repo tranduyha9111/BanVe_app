@@ -29,8 +29,6 @@ import { AvatarImage } from "@radix-ui/react-avatar";
 import { LayoutDashboard, Settings, ChevronRight, Share2, ChevronsUpDown, PanelLeft, Sun, Moon, Info, } from "lucide-react";
 import next from "next";
 import Link from "next/link";
-import { SheetTrigger } from "@/components/ui/sheet";
-import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToggleGroup , ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -193,20 +191,19 @@ export default function Admin() {
             <Separator orientation="vertical" className="h-6 mx-2" />
           </div>
           <div className="flex items-center gap-2">
-            <SheetTrigger className="cursor-pointer inline-flex items-center shadow-none! justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:bg-muted disabled:text-gray-500 disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-primary hover:bg-primary/10 h-9 w-9 rounded-full">
+            <button className="cursor-pointer inline-flex items-center shadow-none! justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:bg-muted disabled:text-gray-500 disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:text-primary hover:bg-primary/10 h-9 w-9 rounded-full">
             <Settings className="lucide lucide-settings"/>
-            </SheetTrigger>
-            <DropdownMenuTrigger className="cursor-pointer inline-flex items-center shadow-none! justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:bg-muted disabled:text-gray-500 disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-primary/10 h-9 w-9 hover:text-primary/80 scale-95 rounded-full">
+            </button>
+            <button className="cursor-pointer inline-flex items-center shadow-none! justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:bg-muted disabled:text-gray-500 disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-primary/10 h-9 w-9 hover:text-primary/80 scale-95 rounded-full">
             <Sun className="lucide lucide-sun size-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"/>
             <Moon className="lucide lucide-moon absolute size-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"/>
             <span className="sr-only">Toggle theme</span>
-
-            </DropdownMenuTrigger>
-            <DropdownMenuTrigger className="cursor-pointer inline-flex items-center shadow-none! justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:bg-muted disabled:text-gray-500 disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-primary/10 px-4 py-2 hover:text-primary/80 relative h-8 w-8 rounded-full">
+            </button>
+            <button className="cursor-pointer inline-flex items-center shadow-none! justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:bg-muted disabled:text-gray-500 disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-primary/10 px-4 py-2 hover:text-primary/80 relative h-8 w-8 rounded-full">
             <Avatar className="relative flex size-8 shrink-0 overflow-hidden h-8 w-8 rounded-lg">
               <AvatarImage className="aspect-square size-full" src="https://giangvien.org/gateway/ban-ve//uploads/file-1769410620682-77102890.jpg" alt="@shadcn" />
             </Avatar>
-            </DropdownMenuTrigger>
+            </button>
             </div> 
         </div>
       </header>
