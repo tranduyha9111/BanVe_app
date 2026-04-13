@@ -15,7 +15,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             @7xl/content:w-full
             @7xl/content:max-w-[1500px]
           ">
-        {/* <SidebarTrigger /> */}
+        <SidebarTrigger />
         {children}
       </main>
       </div>

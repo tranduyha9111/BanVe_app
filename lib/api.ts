@@ -27,10 +27,13 @@ api.interceptors.request.use((config) => {
 
 /* ===== REFRESH ===== */
 let isRefreshing = false;
-let queue: any[] = [];
+let queue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
 
-const processQueue = (error: any, token: string | null) => {
-  queue.forEach((p) => (error ? p.reject(error) : p.resolve(token)));
+const processQueue = (error: unknown, token: string | null) => {
+  queue.forEach((p) => (error ? p.reject(error) : token && p.resolve(token)));
   queue = [];
 };
 
@@ -42,33 +45,66 @@ interface RetryConfig extends AxiosRequestConfig {
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    const original = error.config;
+    const original = error.config as RetryConfig;
+
+    // Handle 500 errors gracefully
+    if (error.response?.status === 500) {
+      console.warn("⚠️ Backend server error (500), returning empty data");
+      return Promise.resolve({ data: [] });
+    }
 
     if (error.response?.status === 401 && !original._retry) {
-      original._retry = true;
-
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) {
-        localStorage.clear();
-        window.location.href = "/auth/login";
-        return Promise.reject(error);
+      if (isRefreshing) {
+        // Queue the request if already refreshing
+        return new Promise((resolve, reject) => {
+          queue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (original.headers) {
+              original.headers.Authorization = `Bearer ${token}`;
+            }
+            return api(original);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
 
+      original._retry = true;
+      isRefreshing = true;
+
       try {
-        const res = await publicApi.post("/api/auth/refresh", { refreshToken });
+        const refreshToken = localStorage.getItem("refreshToken");
+        if (!refreshToken) {
+          processQueue(new Error("No refresh token"), null);
+          localStorage.clear();
+          window.location.href = "/auth/login";
+          return Promise.reject(error);
+        }
+
+        const res = await publicApi.post("/auth/refresh", { refreshToken });
         const { accessToken, refreshToken: newRefresh } = res.data;
 
         localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", newRefresh);
+        if (newRefresh) {
+          localStorage.setItem("refreshToken", newRefresh);
+        }
 
-        original.headers.Authorization = `Bearer ${accessToken}`;
+        processQueue(null, accessToken);
+        if (original.headers) {
+          original.headers.Authorization = `Bearer ${accessToken}`;
+        }
         return api(original);
-      } catch {
+      } catch (refreshError) {
+        processQueue(refreshError, null);
         localStorage.clear();
         window.location.href = "/auth/login";
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );

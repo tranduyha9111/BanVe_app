@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "https://drawingmarketplace.onrender.com/api/:path*",
+      },
+    ];
+  },
   /* config options here */
   reactStrictMode: true,
   images: {
@@ -30,6 +38,16 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "cdn-media.sforum.vn",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "drawingmarketplace.onrender.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
         pathname: "/**",
       },
     ],

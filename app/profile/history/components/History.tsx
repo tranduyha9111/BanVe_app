@@ -3,17 +3,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import next from "next";
 import Link from "next/link";
 
-import {
-  User,
-  ShoppingBag,
-  History as HistoryIcon,
-  Search,
-  Download,
-  PencilLine,
-  CreditCard,
-  Image,
-  File,
-  RefreshCw
+import { 
+  User, 
+  ShoppingBag, 
+  History as HistoryIcon, 
+  Search, 
+  Download, 
+  PencilLine, 
+  CreditCard, 
+  Image, 
+  File, 
+  RefreshCw 
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function History() {
@@ -68,6 +68,14 @@ export default function History() {
                   </Link>
 
                   <Link
+                    href="/profile/purchases"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <ShoppingBag className="size-5" />
+                    <span className="text-sm font-medium">Đơn hàng</span>
+                  </Link>
+
+                  <Link
                     href="/profile/order"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-900 text-white shadow-sm"
                   >
@@ -75,6 +83,30 @@ export default function History() {
                     <span className="text-sm font-medium">
                       Đơn hàng của tôi
                     </span>
+                  </Link>
+
+                  <Link
+                    href="/profile/downloads"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <Download className="size-5" />
+                    <span className="text-sm font-medium">Lịch sử tải file</span>
+                  </Link>
+
+                  <Link
+                    href="/profile/wallet"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <CreditCard className="size-5" />
+                    <span className="text-sm font-medium">Ví của tôi</span>
+                  </Link>
+
+                  <Link
+                    href="/profile/reviews"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <PencilLine className="size-5" />
+                    <span className="text-sm font-medium">Đánh giá của tôi</span>
                   </Link>
 
                   <Link

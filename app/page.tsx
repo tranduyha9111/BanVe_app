@@ -1,7 +1,6 @@
-import BannerSlider from "@/app/components/BannerSlider";
-import Section from "@/app/components/Section";
-import SectionCard from "@/app/components/SectionCard";
-import Image from "next/image";
+import BannerSlider from "@/components/BannerSlider";
+import Section from "@/components/Section";
+import SectionCard from "@/components/SectionCard";
 
 export default function Home() {
   return (

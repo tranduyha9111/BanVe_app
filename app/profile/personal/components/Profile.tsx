@@ -1,34 +1,84 @@
 "use client";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormItem } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   User,
   ShoppingBag,
   History,
   Calendar,
   Save,
+  Shield,
+  Users,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { useProfile } from "@/app/hooks/useProfile";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function Profile() {
   const { profile, loading } = useProfile();
+  const { user, isAdmin, isCollaborator, isUser } = useAuth();
 
+  // Show loading state
   if (loading) {
-    return <div className="p-10 text-center">Đang tải thông tin...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Đang tải thông tin...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  if (!profile) {
-    return <div className="p-10 text-center">Không có dữ liệu</div>;
+  // Use profile data if available, otherwise use user data from auth
+  const displayData = profile || user;
+
+  if (!displayData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <p>Không có dữ liệu người dùng</p>
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  // Get role information
+  const getRoleInfo = () => {
+    if (isAdmin()) {
+      return {
+        role: "Admin",
+        color: "bg-purple-100 text-purple-800 border-purple-200",
+        icon: <Shield className="w-4 h-4" />,
+        description: "Quản trị viên hệ thống",
+      };
+    }
+    if (isCollaborator()) {
+      return {
+        role: "Cộng tác viên",
+        color: "bg-green-100 text-green-800 border-green-200",
+        icon: <Users className="w-4 h-4" />,
+        description: "Người sáng tạo nội dung",
+      };
+    }
+    return {
+      role: "Người dùng",
+      color: "bg-blue-100 text-blue-800 border-blue-200",
+      icon: <User className="w-4 h-4" />,
+      description: "Người dùng thông thường",
+    };
+  };
+
+  const roleInfo = getRoleInfo();
 
   return (
     <>
@@ -53,12 +103,29 @@ export default function Profile() {
               <div className="text-center p-6 border-b">
                 <Avatar className="w-20 h-20 mx-auto mb-4">
                   <AvatarFallback>
-                    {profile.username.charAt(0).toUpperCase()}
+                    {displayData.username?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
 
-                <h3 className="font-semibold">{profile.username}</h3>
-                <p className="text-xs text-gray-500">{profile.email}</p>
+                <h3 className="font-semibold">
+                  {displayData.username || "Unknown User"}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {displayData.email || "No email"}
+                </p>
+
+                {/* Role Badge */}
+                <div className="mt-3 flex justify-center">
+                  <Badge
+                    className={`flex items-center gap-1 ${roleInfo.color} border`}
+                  >
+                    {roleInfo.icon}
+                    {roleInfo.role}
+                  </Badge>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {roleInfo.description}
+                </p>
               </div>
 
               <nav className="p-3 space-y-1">
@@ -77,11 +144,55 @@ export default function Profile() {
                 </Link>
 
                 <Link
-                  href="/profile/history"
+                  href="/profile/purchases"
                   className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100"
                 >
-                  <History size={18} /> Lịch sử
+                  <ShoppingBag size={18} /> Đã mua
                 </Link>
+
+                <Link
+                  href="/profile/reviews"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100"
+                >
+                  <History size={18} /> Đánh giá
+                </Link>
+
+                <Link
+                  href="/profile/downloads"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100"
+                >
+                  <History size={18} /> Tải xuống
+                </Link>
+
+                {/* Admin Dashboard Link */}
+                {isAdmin() && (
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-purple-100 text-purple-700"
+                  >
+                    <Shield size={18} /> Admin Dashboard
+                  </Link>
+                )}
+
+                {/* Collaborator Dashboard Link */}
+                {isCollaborator() && (
+                  <Link
+                    href="/profile/collaborator"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-100 text-green-700"
+                  >
+                    <Settings size={18} /> CTV Dashboard
+                  </Link>
+                )}
+
+                {/* Apply for Collaborator */}
+                {!isAdmin() && !isCollaborator() && (
+                  <Link
+                    href="/profile/collaborator"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-orange-100 text-orange-700"
+                  >
+                    <Users size={18} /> Đăng ký CTV
+                  </Link>
+                )}
               </nav>
             </CardContent>
           </Card>
@@ -97,12 +208,26 @@ export default function Profile() {
               <CardContent className="grid md:grid-cols-2 gap-4">
                 <Info
                   label="Ngày tạo"
-                  value={new Date(profile.createdAt).toLocaleString()}
+                  value={
+                    "createdAt" in displayData && displayData.createdAt
+                      ? new Date(displayData.createdAt).toLocaleString()
+                      : displayData.id
+                        ? "Mock Account"
+                        : "N/A"
+                  }
                 />
                 <Info
                   label="Cập nhật"
-                  value={new Date(profile.updatedAt).toLocaleString()}
+                  value={
+                    "updatedAt" in displayData && displayData.updatedAt
+                      ? new Date(displayData.updatedAt).toLocaleString()
+                      : displayData.id
+                        ? "Mock Account"
+                        : "N/A"
+                  }
                 />
+                <Info label="Vai trò" value={roleInfo.role} />
+                <Info label="ID" value={displayData.id || "N/A"} />
               </CardContent>
             </Card>
 
@@ -117,7 +242,7 @@ export default function Profile() {
                   <FormItem>
                     <Label>Tên đăng nhập</Label>
                     <input
-                      value={profile.username}
+                      value={displayData.username || ""}
                       disabled
                       className="border h-9 px-3 rounded-md"
                     />
@@ -126,7 +251,7 @@ export default function Profile() {
                   <FormItem>
                     <Label>Email</Label>
                     <input
-                      value={profile.email}
+                      value={displayData.email || ""}
                       disabled
                       className="border h-9 px-3 rounded-md"
                     />

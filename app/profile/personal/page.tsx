@@ -1,5 +1,5 @@
 import Profile from "@/app/profile/personal/components/Profile";
-import ProtectedRoute from "../../components/ProtectedRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function ProfilePage() {
   return (

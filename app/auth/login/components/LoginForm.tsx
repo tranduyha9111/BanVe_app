@@ -47,7 +47,22 @@ export default function LoginForm() {
       const returnUrl = searchParams.get("returnUrl") || "/";
       router.replace(returnUrl);
       router.refresh(); // ⭐ DÒNG QUAN TRỌNG
-    } catch {
+    } catch (error: any) {
+      console.error("Login form error:", error);
+      
+      // Check if it's a backend 500 error
+      if (error?.response?.status === 500) {
+        toast.error("Máy chủ đang gặp sự cố. Vui lòng thử lại sau vài phút! 🛠️");
+        return;
+      }
+      
+      // Check if backend error message exists
+      if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+        return;
+      }
+      
+      // Default error
       toast.error("Email hoặc mật khẩu không chính xác");
     }
   };

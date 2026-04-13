@@ -9,6 +9,8 @@ export type Profile = {
   id: string;
   email: string;
   username: string;
+  role?: 'user' | 'admin' | 'collaborator';
+  collaboratorStatus?: 'pending' | 'approved' | 'rejected' | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -35,12 +37,15 @@ export function useProfile() {
         // ✅ Sync với AuthContext nếu có thay đổi
         if (
           data.username !== user.username ||
-          data.email !== user.email
+          data.email !== user.email ||
+          data.role !== user.role
         ) {
           updateUser({
             id: data.id,
             email: data.email,
             username: data.username,
+            role: data.role,
+            collaboratorStatus: data.collaboratorStatus,
           });
         }
       } catch (err: any) {

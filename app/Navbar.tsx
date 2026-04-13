@@ -8,8 +8,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import CartSheetContent from "@/components/CartSheetContent";
 
 import Link from "next/link";
 import {
@@ -34,7 +35,7 @@ import { toast } from "sonner";
 
 export default function Navbar() {
   const [visible, setVisible] = useState(false);
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, isAdmin, isCollaborator } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -105,58 +106,179 @@ export default function Navbar() {
               // 👉 ĐÃ ĐĂNG NHẬP
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 h-9 lg:h-10 px-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-primary/20">
-                    <Avatar className="h-7 w-7 lg:h-8 lg:w-8">
-                      <AvatarFallback className="bg-white border border-gray-400 text-gray-800 text-sm font-medium">
-                        {user?.username?.charAt(0)?.toUpperCase() ?? "?"}
-                      </AvatarFallback>
-                    </Avatar>
+                  <button className="flex items-center gap-2 h-9 lg:h-10 px-2 rounded-full border-2 border-transparent bg-gradient-to-r from-primary/10 to-primary/20 hover:from-primary/20 hover:to-primary/30 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/30 hover:scale-[1.02]">
+                    <div className="relative">
+                      <Avatar className="h-7 w-7 lg:h-8 lg:w-8 ring-2 ring-primary/20 ring-offset-2">
+                        <AvatarImage
+                          src={
+                            user?.avatar ||
+                            `https://ui-avatars.com/api/?name=${user?.username}&background=6366f1&color=fff&size=128`
+                          }
+                          alt={user?.username}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-white font-semibold text-sm shadow-lg">
+                          {user?.username?.charAt(0)?.toUpperCase() ?? "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    </div>
 
-                    <span className="hidden md:inline text-sm font-medium pr-2">
-                      {user.username}
-                    </span>
+                    <div className="hidden md:flex flex-col items-start">
+                      <span className="text-sm font-semibold text-gray-900">
+                        {user.username}
+                      </span>
+                      <span className="text-xs text-gray-500">Online</span>
+                    </div>
                   </button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-3 py-2">
-                    <p className="text-sm font-medium">{user.username}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {user.email}
-                    </p>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-64 border-0 shadow-2xl"
+                >
+                  <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-4 rounded-t-lg">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 ring-2 ring-primary/30">
+                        <AvatarImage
+                          src={
+                            user?.avatar ||
+                            `https://ui-avatars.com/api/?name=${user?.username}&background=6366f1&color=fff&size=128`
+                          }
+                          alt={user?.username}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-white font-semibold shadow-lg">
+                          {user?.username?.charAt(0)?.toUpperCase() ?? "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {user.username}
+                        </p>
+                        <p className="text-xs text-gray-600 truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  <DropdownMenuSeparator />
+                  <div className="p-2">
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/profile/personal"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600">
+                          <User size={16} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Trang cá nhân</p>
+                          <p className="text-xs text-gray-500">
+                            Quản lý thông tin
+                          </p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/profile/personal"
-                      className="flex items-center gap-2 cursor-pointer"
+                    {/* Admin Dashboard */}
+                    {isAdmin() && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/admin"
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-600">
+                            <Settings size={16} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">
+                              Admin Dashboard
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Quản lý hệ thống
+                            </p>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+
+                    {/* Collaborator Dashboard */}
+                    {isCollaborator() && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/profile/collaborator"
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-600">
+                            <Settings size={16} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">
+                              Collaborator Dashboard
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Quản lý nội dung
+                            </p>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+
+                    {/* Apply for Collaborator */}
+                    {!isAdmin() && !isCollaborator() && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href="/profile/collaborator"
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-orange-50 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600">
+                            <Settings size={16} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">Đăng ký CTV</p>
+                            <p className="text-xs text-gray-500">
+                              Trở thành cộng tác viên
+                            </p>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/settings"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600">
+                          <Settings size={16} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Cài đặt</p>
+                          <p className="text-xs text-gray-500">
+                            Tùy chỉnh tài khoản
+                          </p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 transition-colors cursor-pointer group"
                     >
-                      <User size={16} />
-                      Trang cá nhân
-                    </Link>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/settings"
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <Settings size={16} />
-                      Cài đặt
-                    </Link>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 text-red-600 focus:text-red-600 cursor-pointer"
-                  >
-                    <LogOut size={16} />
-                    Đăng xuất
-                  </DropdownMenuItem>
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-600 group-hover:bg-red-200">
+                        <LogOut size={16} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-red-600">
+                          Đăng xuất
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Thoát khỏi tài khoản
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -170,37 +292,7 @@ export default function Navbar() {
               </SheetTrigger>
 
               <SheetContent>
-                <div className="flex flex-col h-full">
-                  <div className="p-6 border-b">
-                    <SheetHeader>
-                      <SheetTitle className="flex items-center gap-2">
-                        <ShoppingCart size={24} />
-                        Giỏ hàng
-                      </SheetTitle>
-                    </SheetHeader>
-                  </div>
-
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                    <ShoppingCart
-                      size={64}
-                      className="text-muted-foreground mb-4"
-                    />
-                    <h3 className="font-semibold text-lg mb-2">
-                      Giỏ hàng của bạn đang trống
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm
-                    </p>
-                    <SheetClose asChild>
-                      <Link href="/">
-                        <button className="px-6 py-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition">
-                          Khám phá sản phẩm
-                        </button>
-                      </Link>
-                    </SheetClose>
-                  </div>
-                </div>
-
+                <CartSheetContent />
                 <SheetClose className="absolute top-4 right-4">
                   <span className="sr-only">Close</span>
                 </SheetClose>

@@ -1,5 +1,4 @@
 import History from "@/app/profile/history/components/History";
-import next from "next";
 
 export default function page(){
     return( 
