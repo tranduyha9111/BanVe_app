@@ -6,7 +6,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +20,7 @@ import {
   LogOut,
   Settings,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Sheet,
   SheetClose,
@@ -30,13 +29,58 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useRouter, usePathname } from "next/navigation";
-import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { getContents } from "@/app/services/contents";
+import type { Content } from "@/types";
 
 export default function Navbar() {
   const [visible, setVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { user, loading, logout, isAdmin, isCollaborator } = useAuth();
   const router = useRouter();
+
+  const trimmedQuery = useMemo(() => searchQuery.trim(), [searchQuery]);
+
+  const goToSearch = () => {
+    if (!trimmedQuery) return;
+    router.push(`/pages/collections?q=${encodeURIComponent(trimmedQuery)}`);
+  };
+
+  const [searchSuggestions, setSearchSuggestions] = useState<
+    Pick<Content, "id" | "title">[]
+  >([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      const q = trimmedQuery;
+      if (!q || q.length < 2) {
+        setSearchSuggestions([]);
+        return;
+      }
+
+      try {
+        setSearchLoading(true);
+        const results = await getContents({ keyword: q, pageSize: 6 });
+        if (cancelled) return;
+        const items = Array.isArray(results) ? results : [];
+        setSearchSuggestions(
+          items.map((item) => ({ id: item.id, title: item.title }))
+        );
+      } catch {
+        if (!cancelled) setSearchSuggestions([]);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [trimmedQuery]);
 
   const handleLogout = async () => {
     await logout();
@@ -73,11 +117,50 @@ export default function Navbar() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setVisible(true)}
-                  onBlur={() => setVisible(false)}
+                  onBlur={() => {
+                    // delay để click suggestion kịp chạy
+                    setTimeout(() => setVisible(false), 120);
+                  }}
                   placeholder="Tìm kiếm bản vẽ..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") goToSearch();
+                  }}
                   className="w-full h-9 lg:h-10 rounded-full pl-10 pr-4 bg-gray-50 border border-gray-200 outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
                 />
+
+                {visible && (trimmedQuery.length >= 2 || searchLoading) && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+10px)] bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50">
+                    <div className="px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                      <Search className="h-3.5 w-3.5" />
+                      {searchLoading ? "Đang tìm kiếm..." : "Gợi ý tìm kiếm"}
+                    </div>
+
+                    {searchSuggestions.length === 0 && !searchLoading ? (
+                      <div className="px-3 py-3 text-sm text-gray-500">
+                        Không có gợi ý.
+                      </div>
+                    ) : (
+                      <div>
+                        {searchSuggestions.slice(0, 6).map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              router.push(`/pages/detail/${s.id}`);
+                            }}
+                          >
+                            {s.title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div

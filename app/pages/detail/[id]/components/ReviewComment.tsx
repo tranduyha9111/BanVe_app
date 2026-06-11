@@ -2,28 +2,33 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getContentReviews, createReview, updateReview, deleteReview } from "@/app/services/reviews";
+import {
+  getContentReviews,
+  createReview,
+  updateReview,
+  deleteReview,
+} from "@/app/services/reviews";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  MessageSquareOff, 
-  Star, 
-  Shield, 
-  ThumbsUp, 
-  Edit, 
-  Trash2, 
-  Check, 
-  X 
+import {
+  MessageSquareOff,
+  Star,
+  Shield,
+  ThumbsUp,
+  Edit,
+  Trash2,
+  Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Review {
   id: string;
-  rating: number; 
+  rating: number;
   comment: string;
   user: {
     id: string;
@@ -37,7 +42,7 @@ interface Review {
 export default function ReviewComment() {
   const params = useParams();
   const contentId = params.id as string;
-  
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
@@ -103,7 +108,7 @@ export default function ReviewComment() {
         rating: editForm.rating,
         comment: editForm.comment,
       });
-      setReviews(reviews.map(r => r.id === reviewId ? updatedReview : r));
+      setReviews(reviews.map((r) => (r.id === reviewId ? updatedReview : r)));
       setEditingReview(null);
       setEditForm({ rating: 5, comment: "" });
       toast.success("Đã cập nhật đánh giá thành công!");
@@ -122,7 +127,7 @@ export default function ReviewComment() {
 
     try {
       await deleteReview(reviewId);
-      setReviews(reviews.filter(r => r.id !== reviewId));
+      setReviews(reviews.filter((r) => r.id !== reviewId));
       toast.success("Đã xóa đánh giá thành công!");
     } catch (error) {
       console.error("Failed to delete review:", error);
@@ -135,7 +140,11 @@ export default function ReviewComment() {
     setEditForm({ rating: 5, comment: "" });
   };
 
-  const renderStars = (rating: number, interactive = false, onChange?: (rating: number) => void) => {
+  const renderStars = (
+    rating: number,
+    interactive = false,
+    onChange?: (rating: number) => void
+  ) => {
     return (
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -202,7 +211,12 @@ export default function ReviewComment() {
               <Textarea
                 placeholder="Chia sẻ suy nghĩ của bạn về sản phẩm này..."
                 value={newReview.comment}
-                onChange={(e: any) => setNewReview({ ...newReview, comment: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setNewReview({
+                    ...newReview,
+                    comment: e.target.value,
+                  })
+                }
                 rows={4}
               />
             </div>
@@ -223,7 +237,9 @@ export default function ReviewComment() {
               <MessageSquareOff className="h-8 w-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Chưa có đánh giá nào</h3>
-            <p className="text-gray-500">Hãy là người đầu tiên đánh giá sản phẩm này</p>
+            <p className="text-gray-500">
+              Hãy là người đầu tiên đánh giá sản phẩm này
+            </p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -238,9 +254,13 @@ export default function ReviewComment() {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <h4 className="font-semibold">{review.user.username}</h4>
+                        <h4 className="font-semibold">
+                          {review.user.username}
+                        </h4>
                         <p className="text-sm text-gray-600">
-                          {new Date(review.createdAt).toLocaleDateString("vi-VN")}
+                          {new Date(review.createdAt).toLocaleDateString(
+                            "vi-VN"
+                          )}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -267,20 +287,31 @@ export default function ReviewComment() {
                         )}
                       </div>
                     </div>
-                    
+
                     {editingReview === review.id ? (
                       <div className="space-y-4 mt-4">
                         <div>
-                          <label className="block text-sm font-medium mb-2">Đánh giá</label>
+                          <label className="block text-sm font-medium mb-2">
+                            Đánh giá
+                          </label>
                           {renderStars(editForm.rating, true, (rating) =>
                             setEditForm({ ...editForm, rating })
                           )}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-2">Nhận xét</label>
+                          <label className="block text-sm font-medium mb-2">
+                            Nhận xét
+                          </label>
                           <Textarea
                             value={editForm.comment}
-                            onChange={(e: any) => setEditForm({ ...editForm, comment: e.target.value })}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLTextAreaElement>
+                            ) =>
+                              setEditForm({
+                                ...editForm,
+                                comment: e.target.value,
+                              })
+                            }
                             rows={3}
                           />
                         </div>
@@ -305,11 +336,17 @@ export default function ReviewComment() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                      <p className="text-gray-700 leading-relaxed">
+                        {review.comment}
+                      </p>
                     )}
-                    
+
                     <div className="flex items-center gap-4 mt-4">
-                      <Button variant="ghost" size="sm" className="text-gray-600">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-600"
+                      >
                         <ThumbsUp className="h-4 w-4 mr-1" />
                         Hữu ích ({review.helpful})
                       </Button>
@@ -330,7 +367,10 @@ export default function ReviewComment() {
           <div className="text-center">
             <div className="text-4xl font-bold mb-2">
               {reviews.length > 0
-                ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+                ? (
+                    reviews.reduce((sum, r) => sum + r.rating, 0) /
+                    reviews.length
+                  ).toFixed(1)
                 : "0.0"}
             </div>
             {renderStars(

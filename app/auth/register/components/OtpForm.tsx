@@ -78,11 +78,16 @@ export default function OtpForm({ email, onBack }: OtpFormProps) {
       toast.success("Xác thực thành công! 🎉");
 
       setTimeout(() => router.push("/auth/login"), 500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       submittedRef.current = false;
       form.setValue("otp", "");
+
+      const err = error as {
+        response?: { data?: { message?: string } };
+      };
+
       toast.error(
-        error?.response?.data?.message || "Mã OTP không đúng hoặc đã hết hạn"
+        err?.response?.data?.message || "Mã OTP không đúng hoặc đã hết hạn"
       );
     }
   };
@@ -98,8 +103,12 @@ export default function OtpForm({ email, onBack }: OtpFormProps) {
       form.setValue("otp", "");
       setCountdown(60);
       toast.success("Mã OTP mới đã được gửi");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Không thể gửi lại mã OTP");
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string } };
+      };
+
+      toast.error(err?.response?.data?.message || "Không thể gửi lại mã OTP");
     } finally {
       setIsResending(false);
     }

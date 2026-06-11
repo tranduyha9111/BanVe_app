@@ -14,26 +14,29 @@ const list1 = [
   {
     id: 1,
     icon: Building,
-    text: "Điện tử",
-    description: "Bản vẽ mạch điện tử và linh kiện",
+    text: "Kiến trúc nhà ở",
+    description:
+      "Bản vẽ thiết kế nhà phố, biệt thự và bố trí công năng chi tiết",
   },
   {
     id: 2,
     icon: Building,
-    text: "Điện tử",
-    description: "Bản vẽ mạch điện tử và linh kiện",
+    text: "Thiết kế nội thất",
+    description:
+      "Bản vẽ nội thất theo phong cách hiện đại, tối ưu ánh sáng và tiện nghi",
   },
   {
     id: 3,
     icon: Building,
-    text: "Điện tử",
-    description: "Bản vẽ mạch điện tử và linh kiện",
+    text: "Cơ sở hạ tầng",
+    description: "Bản vẽ quy hoạch và hạ tầng kỹ thuật phục vụ dự án xây dựng",
   },
   {
     id: 4,
     icon: Building,
-    text: "Điện tử",
-    description: "Bản vẽ mạch điện tử và linh kiện",
+    text: "Kết cấu & M&E",
+    description:
+      "Bản vẽ kết cấu, hệ điện – nước – thông gió theo tiêu chuẩn kỹ thuật",
   },
 ];
 
@@ -41,25 +44,35 @@ const list2 = [
   {
     id: 1,
     icon: Building,
-    text: "Điện tử",
-    description: "Bản vẽ mạch điện tử và linh kiện",
+    text: "Biệt thự & villa",
+    description:
+      "Bản vẽ ngoại thất – mặt bằng – phối cảnh cho không gian cao cấp",
   },
   {
     id: 2,
     icon: Building,
-    text: "Điện tử",
-    description: "Bản vẽ mạch điện tử và linh kiện",
+    text: "Chung cư",
+    description:
+      "Bản vẽ mặt bằng căn hộ, bố trí khu chức năng và giải pháp tối ưu",
   },
   {
     id: 3,
     icon: Building,
-    text: "Điện tử",
-    description: "Bản vẽ mạch điện tử và linh kiện",
+    text: "Văn phòng & thương mại",
+    description:
+      "Bản vẽ thiết kế không gian làm việc, cửa hàng và khu thương mại",
   },
 ];
 
+type SectionItem = {
+  id: number;
+  icon: React.ComponentType<{ className?: string }>;
+  text: string;
+  description: string;
+};
+
 /* --- COMPONENT CARD ITEM --- */
-function CardItem({ item }: any) {
+function CardItem({ item }: { item: SectionItem }) {
   const Icon = item.icon;
 
   return (

@@ -112,17 +112,21 @@ export default function ResetPasswordForm({
       setTimeout(() => {
         router.push("/auth/login");
       }, 500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (process.env.NODE_ENV === "development") {
+         
         console.error(error);
       }
+
+      const err = error as {
+        response?: { data?: { message?: string } };
+      };
 
       submittedRef.current = false;
       form.setValue("otp", "");
 
       toast.error(
-        error?.response?.data?.message ||
-          "Mã OTP không đúng hoặc đã hết hạn"
+        err?.response?.data?.message || "Mã OTP không đúng hoặc đã hết hạn"
       );
     }
   };
@@ -146,13 +150,18 @@ export default function ResetPasswordForm({
       form.setValue("otp", "");
       setCountdown(60);
       toast.success("Mã OTP mới đã được gửi đến email của bạn");
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (process.env.NODE_ENV === "development") {
+         
         console.error(error);
       }
 
+      const err = error as {
+        response?: { data?: { message?: string } };
+      };
+
       toast.error(
-        error?.response?.data?.message ||
+        err?.response?.data?.message ||
           "Không thể gửi lại mã OTP, vui lòng thử lại sau"
       );
     } finally {
@@ -214,9 +223,7 @@ export default function ResetPasswordForm({
 
           {/* Resend */}
           <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Không nhận được mã?
-            </p>
+            <p className="text-sm text-muted-foreground">Không nhận được mã?</p>
             <button
               type="button"
               onClick={handleResend}

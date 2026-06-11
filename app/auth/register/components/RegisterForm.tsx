@@ -67,14 +67,18 @@ export default function RegisterForm({ onNext }: RegisterFormProps) {
 
       toast.success("Đăng ký thành công! Vui lòng kiểm tra email.");
       onNext(data.email.trim());
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (process.env.NODE_ENV === "development") {
+         
         console.error("REGISTER ERROR:", error);
       }
 
+      const err = error as {
+        response?: { data?: { message?: string } };
+      };
+
       const errorMessage =
-        error?.response?.data?.message ||
-        "Đăng ký thất bại, vui lòng thử lại";
+        err?.response?.data?.message || "Đăng ký thất bại, vui lòng thử lại";
       toast.error(errorMessage);
     }
   };

@@ -244,7 +244,10 @@ export default function BannerManagement() {
         </div>
         <div className="grid gap-4">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse"></div>
+            <div
+              key={i}
+              className="h-24 bg-gray-100 rounded-lg animate-pulse"
+            ></div>
           ))}
         </div>
       </div>
@@ -480,8 +483,8 @@ export default function BannerManagement() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Bạn có chắc chắn muốn xóa banner "{banner.title}"? Hành
-                              động này không thể hoàn tác.
+                              Bạn có chắc chắn muốn xóa banner {banner.title}?
+                              Hành động này không thể hoàn tác.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -514,9 +517,7 @@ export default function BannerManagement() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa Banner</DialogTitle>
-            <DialogDescription>
-              Cập nhật thông tin banner
-            </DialogDescription>
+            <DialogDescription>Cập nhật thông tin banner</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

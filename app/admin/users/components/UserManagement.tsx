@@ -79,7 +79,13 @@ export default function UserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const params: any = {
+      const params: {
+        page: number;
+        limit: number;
+        search?: string;
+        role?: string;
+        status?: string;
+      } = {
         page: currentPage,
         limit: 10,
       };
@@ -104,8 +110,8 @@ export default function UserManagement() {
 
       // Handle 500 errors gracefully
       if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as any;
-        if (axiosError.response?.status === 500) {
+        const axiosLike = error as { response?: { status?: number } };
+        if (axiosLike.response?.status === 500) {
           console.warn("⚠️ Backend server error (500), using empty data");
           setUsers([]);
           setTotalPages(1);
@@ -140,8 +146,8 @@ export default function UserManagement() {
         {role === "admin"
           ? "Quản trị viên"
           : role === "collaborator"
-            ? "Cộng tác viên"
-            : "Người dùng"}
+          ? "Cộng tác viên"
+          : "Người dùng"}
       </Badge>
     );
   };

@@ -12,10 +12,12 @@ import Autoplay from "embla-carousel-autoplay";
 import { useRef, useEffect, useState } from "react";
 import { getActiveBanners } from "@/app/services/banners";
 import { Skeleton } from "@/components/ui/skeleton";
+import { debugError, debugLog, debugWarn } from "@/lib/debug";
+import type { BannerSlide } from "@/types";
 
 export default function BannerSlider() {
   const plugin = useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
-  const [banners, setBanners] = useState<any[]>([]);
+  const [banners, setBanners] = useState<BannerSlide[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fallback data
@@ -55,14 +57,14 @@ export default function BannerSlider() {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        console.log("🎨 Fetching banners...");
+        debugLog("🎨 Fetching banners...");
         setLoading(true);
 
         const response = await getActiveBanners();
-        console.log("📥 Banner response:", response);
+        debugLog("📥 Banner response:", response);
 
         // Handle different response structures
-        let bannersData = response;
+        let bannersData: unknown = response;
 
         // If response has data property and it's not an array
         if (
@@ -71,62 +73,85 @@ export default function BannerSlider() {
           !Array.isArray(response) &&
           "data" in response
         ) {
-          const responseData = (response as any).data;
-          if (responseData) {
-            bannersData = responseData;
-          }
+          const maybe = response as { data?: unknown };
+          if (maybe.data) bannersData = maybe.data;
         }
 
         // Check if data is an array before mapping
         if (Array.isArray(bannersData) && bannersData.length > 0) {
-          const transformedBanners = bannersData.map((banner: any) => ({
-            id: banner.id || banner._id || `banner-${Math.random()}`,
-            img:
-              banner.image ||
-              banner.img ||
-              banner.imageUrl ||
-              "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1600&h=900&fit=crop&auto=format&q=80",
-            title: banner.title || "Bản vẽ Kiến trúc",
-            title1:
-              banner.subtitle || banner.title1 || "Chuyên nghiệp & Sáng tạo",
-            description:
-              banner.description ||
-              "Giải pháp thiết kế toàn diện, sáng tạo và tối ưu cho mọi dự án của bạn",
-            button: banner.buttonText || banner.button || "Khám phá ngay",
-            button1:
-              banner.secondaryButtonText || banner.button1 || "Xem dự án mẫu",
-          }));
-          console.log("✨ Transformed banners:", transformedBanners);
-          setBanners(transformedBanners);
+          const transformedBanners: BannerSlide[] = bannersData
+            .map((banner) => {
+              if (!banner || typeof banner !== "object") return null;
+
+              const b = banner as Record<string, unknown>;
+              const id =
+                (typeof b.id === "string" && b.id) ||
+                (typeof b._id === "string" && (b._id as string)) ||
+                `banner-${Math.random()}`;
+
+              const img =
+                (typeof b.image === "string" && b.image) ||
+                (typeof b.img === "string" && b.img) ||
+                (typeof b.imageUrl === "string" && b.imageUrl) ||
+                "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1600&h=900&fit=crop&auto=format&q=80";
+
+              const title =
+                (typeof b.title === "string" && b.title) || "Bản vẽ Kiến trúc";
+
+              const title1 =
+                (typeof b.subtitle === "string" && b.subtitle) ||
+                (typeof b.title1 === "string" && b.title1) ||
+                "Chuyên nghiệp & Sáng tạo";
+
+              const description =
+                (typeof b.description === "string" && b.description) ||
+                "Giải pháp thiết kế toàn diện, sáng tạo và tối ưu cho mọi dự án của bạn";
+
+              const button =
+                (typeof b.buttonText === "string" && b.buttonText) ||
+                (typeof b.button === "string" && b.button) ||
+                "Khám phá ngay";
+
+              const button1 =
+                (typeof b.secondaryButtonText === "string" && b.secondaryButtonText) ||
+                (typeof b.button1 === "string" && b.button1) ||
+                "Xem dự án mẫu";
+
+              return { id, img, title, title1, description, button, button1 };
+            })
+            .filter((x): x is BannerSlide => x !== null);
+
+          if (transformedBanners.length > 0) {
+            debugLog("✨ Transformed banners:", transformedBanners);
+            setBanners(transformedBanners);
+          } else {
+            setBanners(fallbackBanners);
+          }
         } else {
-          console.warn("⚠️ API response is not a valid array:", bannersData);
-          console.warn("⚠️ Response type:", typeof bannersData);
-          console.log("🔄 Using fallback banners");
+          debugWarn("⚠️ API response is not a valid array");
           setBanners(fallbackBanners);
         }
       } catch (error) {
-        console.error("❌ Failed to fetch banners:", error);
+        debugError("❌ Failed to fetch banners:", error);
 
         // Enhanced error logging
         if (error instanceof Error) {
-          console.error("❌ Error message:", error.message);
+          debugError("❌ Error message:", error.message);
         }
 
         // Check if it's an Axios error for more details
         if (error && typeof error === "object" && "response" in error) {
-          const axiosError = error as any;
-          console.error("❌ Axios error status:", axiosError.response?.status);
+          const axiosError = error as { response?: { status?: number } };
+          debugError("❌ Axios error status:", axiosError.response?.status);
 
           // If 500 error, backend is likely down
           if (axiosError.response?.status === 500) {
-            console.warn(
-              "⚠️ Backend server returned 500 error - using fallback data",
-            );
+            debugWarn("⚠️ Backend server returned 500 error - using fallback data");
           }
         }
 
         // Always use fallback data on error
-        console.log("🔄 Using fallback banner data");
+        debugLog("🔄 Using fallback banner data");
         setBanners(fallbackBanners);
       } finally {
         setLoading(false);
@@ -154,7 +179,7 @@ export default function BannerSlider() {
         plugins={[plugin.current]} // ▶ autoplay
       >
         <CarouselContent>
-          {displayBanners.map((slide: any) => (
+          {displayBanners.map((slide, index) => (
             <CarouselItem
               key={slide.id}
               className="min-w-0 shrink-0 grow-0 basis-full"
@@ -167,7 +192,7 @@ export default function BannerSlider() {
                     alt={slide.title}
                     fill
                     className="object-cover"
-                    priority={slide.id === 1}
+                    priority={index === 0}
                   />
                   {/* Overlay gradient */}
                   <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"></div>

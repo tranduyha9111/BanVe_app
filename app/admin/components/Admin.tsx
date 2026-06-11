@@ -46,7 +46,6 @@ import {
   DollarSign,
   Users,
 } from "lucide-react";
-import next from "next";
 import Link from "next/link";
 import {
   Card,
@@ -63,20 +62,62 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-const data = [
-  { name: "Mon", value: 120 },
-  { name: "Tue", value: 200 },
-  { name: "Wed", value: 150 },
-  { name: "Thu", value: 80 },
-  { name: "Fri", value: 170 },
+import { useAuth } from "@/app/context/AuthContext";
+import { getChartData } from "@/app/services/admin";
+import { useEffect, useState } from "react";
+import type { ChartPoint } from "@/types";
+
+const EMPTY_CHART: ChartPoint[] = [
+  { name: "T1", value: 0 },
+  { name: "T2", value: 0 },
+  { name: "T3", value: 0 },
 ];
-const chartData = [
-  { name: "T1", value: 400 },
-  { name: "T2", value: 300 },
-  { name: "T3", value: 600 },
-  // ... thêm data cho 3 tháng
-];
+
 export default function Admin() {
+  const { user } = useAuth();
+
+  const [period, setPeriod] = useState<"7days" | "30days" | "3months">(
+    "30days"
+  );
+  const [chartData, setChartData] = useState<ChartPoint[]>(EMPTY_CHART);
+  const [loadingChart, setLoadingChart] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        setLoadingChart(true);
+        const res = await getChartData({ type: "users", period });
+
+        // backend shape unknown; normalize safely
+        const maybeResp = res as { data?: ChartPoint[] } | ChartPoint[];
+        const normalized: ChartPoint[] = Array.isArray(maybeResp)
+          ? maybeResp
+          : Array.isArray(maybeResp?.data)
+          ? maybeResp.data
+          : EMPTY_CHART;
+
+        if (!cancelled) setChartData(normalized);
+      } catch {
+        if (!cancelled) setChartData(EMPTY_CHART);
+      } finally {
+        if (!cancelled) setLoadingChart(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [period]);
+
+  const toggleValueToPeriod = (value: string | null) => {
+    if (value === "7 days" || value === "7days") return "7days";
+    if (value === "30 days" || value === "30days") return "30days";
+    return "3months";
+  };
+
   return (
     <>
       <Sidebar variant="inset" collapsible="icon">
@@ -289,13 +330,15 @@ export default function Admin() {
                 <Avatar className="relative flex size-8 shrink-0 overflow-hidden h-8 w-8 rounded-lg">
                   <AvatarImage
                     className="aspect-square size-full"
-                    alt="Admin System"
-                    src="https://giangvien.org/gateway/ban-ve//uploads/file-1769410620682-77102890.jpg"
+                    alt={user?.username ?? "Admin"}
+                    src={user?.avatar ?? undefined}
                   />
                 </Avatar>
                 <div className="grid flex-1 text-start text-sm leading-tight">
-                  <span className="truncate font-semibold">Admin System</span>
-                  <span className="truncate text-xs"> admin@gmail.com</span>
+                  <span className="truncate font-semibold">
+                    {user?.username ?? "Admin"}
+                  </span>
+                  <span className="truncate text-xs">{user?.email ?? ""}</span>
                 </div>
                 <ChevronsUpDown className="lucide lucide-chevrons-up-down ms-auto size-4" />
               </SidebarMenuButton>
@@ -360,7 +403,7 @@ export default function Admin() {
                   </div>
                   <div className="h-8 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={data}>
+                      <LineChart data={chartData}>
                         <Line dataKey="value" />
                       </LineChart>
                     </ResponsiveContainer>
@@ -393,7 +436,7 @@ export default function Admin() {
                   </div>
                   <div className="h-8 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={data}>
+                      <LineChart data={chartData}>
                         <Line dataKey="value" />
                       </LineChart>
                     </ResponsiveContainer>
@@ -426,7 +469,7 @@ export default function Admin() {
                   </div>
                   <div className="h-8 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={data}>
+                      <LineChart data={chartData}>
                         <Line dataKey="value" />
                       </LineChart>
                     </ResponsiveContainer>
@@ -459,7 +502,7 @@ export default function Admin() {
                   </div>
                   <div className="h-8 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={data}>
+                      <LineChart data={chartData}>
                         <Line dataKey="value" />
                       </LineChart>
                     </ResponsiveContainer>
@@ -492,6 +535,17 @@ export default function Admin() {
                   <CardAction className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
                     <ToggleGroup
                       type="single"
+                      value={
+                        period === "7days"
+                          ? "7 days"
+                          : period === "30days"
+                          ? "30 days"
+                          : "3 months"
+                      }
+                      onValueChange={(v) => {
+                        const mapped = toggleValueToPeriod(v);
+                        setPeriod(mapped);
+                      }}
                       className="group/toggle-group w-fit items-center rounded-md data-[variant=outline]:shadow-xs hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
                     >
                       <ToggleGroupItem

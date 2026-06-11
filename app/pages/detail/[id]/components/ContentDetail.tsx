@@ -25,31 +25,7 @@ import {
 import Image from "next/image";
 import { toast } from "sonner";
 import CopyrightReportButton from "@/components/CopyrightReportButton";
-
-interface Content {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  thumbnail: string;
-  images: string[];
-  category: {
-    id: string;
-    name: string;
-  };
-  rating: number;
-  downloads: number;
-  views: number;
-  createdAt: string;
-  author: {
-    id: string;
-    username: string;
-    avatar?: string;
-  };
-  tags: string[];
-  fileCount: number;
-  fileSize: string;
-}
+import type { Content } from "@/types";
 
 export default function ContentDetail() {
   const params = useParams();
@@ -174,15 +150,17 @@ export default function ContentDetail() {
             <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
               <div className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                <span className="font-medium">{content.rating.toFixed(1)}</span>
+                <span className="font-medium">
+                  {(content.rating ?? 0).toFixed(1)}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <Download className="h-4 w-4" />
-                <span>{content.downloads}</span>
+                <span>{content.downloads ?? 0}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Eye className="h-4 w-4" />
-                <span>{content.views}</span>
+                <span>{content.views ?? 0}</span>
               </div>
             </div>
 
@@ -192,24 +170,26 @@ export default function ContentDetail() {
           </div>
 
           {/* Author */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10">
-                  <Image
-                    src={content.author.avatar || "/placeholder-avatar.jpg"}
-                    alt={content.author.username}
-                    fill
-                    className="rounded-full object-cover"
-                  />
+          {content.author && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-10 h-10">
+                    <Image
+                      src={content.author.avatar || "/placeholder-avatar.jpg"}
+                      alt={content.author.username}
+                      fill
+                      className="rounded-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium">{content.author.username}</p>
+                    <p className="text-sm text-gray-600">Tác giả</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">{content.author.username}</p>
-                  <p className="text-sm text-gray-600">Tác giả</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Tags */}
           {content.tags && content.tags.length > 0 && (
@@ -228,11 +208,11 @@ export default function ContentDetail() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-gray-600">Số lượng file</p>
-                  <p className="font-medium">{content.fileCount} files</p>
+                  <p className="font-medium">{content.fileCount ?? 0} files</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Dung lượng</p>
-                  <p className="font-medium">{content.fileSize}</p>
+                  <p className="font-medium">{content.fileSize ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Ngày đăng</p>

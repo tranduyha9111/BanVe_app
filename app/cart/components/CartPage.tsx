@@ -28,29 +28,16 @@ import {
   addToCart,
 } from "@/app/services/cart";
 import CouponInput from "@/components/CouponInput";
-
-interface CartItem {
-  id: string;
-  contentId: string;
-  content: {
-    id: string;
-    title: string;
-    description?: string;
-    price?: number;
-    image?: string;
-    category?: {
-      name: string;
-    };
-  };
-  quantity: number;
-  createdAt: string;
-}
+import type { AppliedCoupon, CartItem } from "@/types";
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
-  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(
+    null,
+  );
 
   const fetchCart = async () => {
     try {

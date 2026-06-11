@@ -1,4 +1,6 @@
 import axios, { AxiosRequestConfig } from "axios";
+import { clearSessionCookie } from "@/lib/auth-cookie";
+import { debugWarn } from "@/lib/debug";
 
 /* ===== PUBLIC ===== */
 export const publicApi = axios.create({
@@ -47,10 +49,20 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config as RetryConfig;
 
-    // Handle 500 errors gracefully
+    // Handle 500 errors
     if (error.response?.status === 500) {
-      console.warn("⚠️ Backend server error (500), returning empty data");
-      return Promise.resolve({ data: [] });
+      debugWarn("Backend server error (500)");
+
+      // Do not silently convert to empty arrays; let UI handle fallback explicitly.
+      const message =
+        (error.response?.data && (error.response.data.message as string)) ||
+        "Internal Server Error";
+
+      return Promise.reject(
+        new Error(
+          typeof message === "string" ? message : "Internal Server Error"
+        )
+      );
     }
 
     if (error.response?.status === 401 && !original._retry) {
@@ -78,6 +90,7 @@ api.interceptors.response.use(
         if (!refreshToken) {
           processQueue(new Error("No refresh token"), null);
           localStorage.clear();
+          clearSessionCookie();
           window.location.href = "/auth/login";
           return Promise.reject(error);
         }
@@ -98,6 +111,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         localStorage.clear();
+        clearSessionCookie();
         window.location.href = "/auth/login";
         return Promise.reject(refreshError);
       } finally {
@@ -106,5 +120,5 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );

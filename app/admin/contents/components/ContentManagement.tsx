@@ -46,28 +46,7 @@ import {
   deleteContent,
   getManagementContentDetail,
 } from "@/app/services/contents";
-
-interface Content {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  thumbnail: string;
-  status: 'draft' | 'published' | 'archived';
-  category: {
-    id: string;
-    name: string;
-  };
-  collaborator: {
-    id: string;
-    username: string;
-    email: string;
-  };
-  downloads: number;
-  views: number;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Content } from "@/types";
 
 export default function ContentManagement() {
   const [contents, setContents] = useState<Content[]>([]);
@@ -147,7 +126,7 @@ export default function ContentManagement() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'draft':
         return <Badge variant="secondary">Bản nháp</Badge>;
@@ -286,8 +265,12 @@ export default function ContentManagement() {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{content.collaborator.username}</div>
-                      <div className="text-sm text-gray-500">{content.collaborator.email}</div>
+                      <div className="font-medium">
+                        {content.collaborator?.username ?? "—"}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {content.collaborator?.email ?? ""}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -400,8 +383,12 @@ export default function ContentManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Tác giả</label>
-                  <p className="font-medium">{selectedContent.collaborator.username}</p>
-                  <p className="text-sm text-gray-500">{selectedContent.collaborator.email}</p>
+                  <p className="font-medium">
+                    {selectedContent.collaborator?.username ?? "—"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {selectedContent.collaborator?.email ?? ""}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Danh mục</label>

@@ -61,7 +61,12 @@ export default function Collaborator() {
   const [collaboratorInfo, setCollaboratorInfo] = useState<CollaboratorInfo | null>(null);
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [revenueStats, setRevenueStats] = useState<RevenueStats | null>(null);
-  const [wallet, setWallet] = useState<any>(null);
+  type Wallet = {
+    availableBalance: number;
+    pendingBalance: number;
+  };
+
+  const [wallet, setWallet] = useState<Wallet | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [registerForm, setRegisterForm] = useState({

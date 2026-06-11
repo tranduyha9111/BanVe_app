@@ -4,10 +4,10 @@ import SectionCard from "@/components/SectionCard";
 
 export default function Home() {
   return (
-    <main>
+    <>
       <BannerSlider />
       <Section />
       <SectionCard />
-    </main>
+    </>
   );
 }

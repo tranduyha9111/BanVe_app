@@ -2,10 +2,20 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+    // NEXT_PUBLIC_API_URL dự kiến có dạng: https://host/api
+    const destinationOrigin = apiUrl.endsWith("/api")
+      ? apiUrl.slice(0, -"/api".length)
+      : apiUrl;
+
+    if (!destinationOrigin) {
+      return [];
+    }
+
     return [
       {
         source: "/api/:path*",
-        destination: "https://drawingmarketplace.onrender.com/api/:path*",
+        destination: `${destinationOrigin}/api/:path*`,
       },
     ];
   },

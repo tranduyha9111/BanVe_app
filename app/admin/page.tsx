@@ -1,57 +1,29 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import { getDashboardStats } from "@/app/services/admin";
-import { Users, FileText, UserCheck, MessageSquare } from "lucide-react";
+import { Users, FileText, UserCheck, MessageSquare, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-
-interface DashboardStats {
-  totalUsers: number;
-  totalContents: number;
-  totalCollaborators: number;
-  totalReviews: number;
-  userGrowth: number;
-  contentGrowth: number;
-  collaboratorGrowth: number;
-  reviewGrowth: number;
-}
+import { getAxiosErrorMessage } from "@/lib/errors";
+import type { DashboardStats } from "@/types";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchStats = async () => {
     try {
       setLoading(true);
+      setErrorMessage(null);
       const data = await getDashboardStats({ period: "30days" });
       setStats(data);
     } catch (error) {
-      console.error("Failed to fetch dashboard stats:", error);
-
-      // Handle 500 errors gracefully
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as any;
-        if (axiosError.response?.status === 500) {
-          console.warn("⚠️ Backend server error (500), using fallback data");
-          // Set fallback data when backend is down
-          setStats({
-            totalUsers: 4682,
-            totalContents: 1226,
-            totalCollaborators: 1080,
-            totalReviews: 12543,
-            userGrowth: 12.5,
-            contentGrowth: 8.3,
-            collaboratorGrowth: 15.2,
-            reviewGrowth: 6.7,
-          });
-          return;
-        }
-      }
-
-      toast.error("Không thể tải thống kê");
+      setErrorMessage(getAxiosErrorMessage(error, "Không thể tải thống kê"));
+      toast.error(getAxiosErrorMessage(error, "Không thể tải thống kê"));
     } finally {
       setLoading(false);
     }
@@ -117,7 +89,20 @@ export default function AdminDashboard() {
   return (
     <AdminProtectedRoute>
       <div>
-        <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <Button variant="outline" size="sm" onClick={fetchStats}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tải lại
+          </Button>
+        </div>
+
+        {errorMessage && !stats && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((card, index) => {
             const Icon = card.icon;

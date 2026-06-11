@@ -1,4 +1,6 @@
 import { api, publicApi } from "@/lib/api";
+import { debugError, debugLog } from "@/lib/debug";
+import type { Profile } from "@/types";
 
 /* ===== REGISTER ===== */
 export const register = (data: {
@@ -26,9 +28,7 @@ export const resetPassword = (payload: {
 
 /* ===== LOGIN ===== */
 export const login = (payload: { email: string; password: string }) => {
-  console.log("📤 Payload:", { email: payload.email, password: "***" });
-
-  // Real API call for all users
+  debugLog("Login payload:", { email: payload.email, password: "***" });
   return publicApi.post("/auth/login", payload).then((r) => r.data);
 };
 
@@ -45,50 +45,30 @@ export const refreshToken = (data: { refreshToken: string }) =>
   publicApi.post("/auth/refresh", data).then((r) => r.data);
 
 /* ===== PROFILE ===== */
-export const getProfile = async () => {
+export const getProfile = async (): Promise<Profile> => {
   try {
-    console.log("👤 Making getProfile API call to:", "/auth/profile");
-
-    // Real API call for all users
+    debugLog("Fetching profile from /auth/profile");
     const res = await api.get("/auth/profile");
-    console.log("📥 Profile API response:", res);
-    console.log("� Profile data:", res.data);
-
-    // Map backend response to frontend format
     const backendProfile = res.data;
-    const frontendProfile = {
+
+    const frontendProfile: Profile = {
       id: backendProfile.id,
       email: backendProfile.email,
       username: backendProfile.username,
-      role: (backendProfile.isCollaborator
+      role: backendProfile.isCollaborator
         ? "collaborator"
         : backendProfile.isAdmin
           ? "admin"
-          : "user") as "user" | "collaborator" | "admin",
+          : "user",
       collaboratorStatus: backendProfile.collaboratorStatus || null,
       createdAt: backendProfile.createdAt || new Date().toISOString(),
       updatedAt: backendProfile.updatedAt || new Date().toISOString(),
     };
 
-    console.log("✨ Mapped profile data:", frontendProfile);
+    debugLog("Mapped profile:", frontendProfile);
     return frontendProfile;
   } catch (error) {
-    console.error("❌ GetProfile API error:", error);
-
-    // Check if it's an Axios error
-    if (error && typeof error === "object" && "response" in error) {
-      const axiosError = error as {
-        response?: {
-          status?: number;
-          data?: unknown;
-          headers?: unknown;
-        };
-      };
-      console.error("❌ Profile error status:", axiosError.response?.status);
-      console.error("❌ Profile error data:", axiosError.response?.data);
-      console.error("❌ Profile error headers:", axiosError.response?.headers);
-    }
-
+    debugError("GetProfile API error:", error);
     throw error;
   }
 };

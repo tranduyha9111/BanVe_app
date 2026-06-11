@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { getContents } from "@/app/services/contents";
 import { getCategories } from "@/app/services/categories";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Content, CategoryRef } from "@/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,40 +19,30 @@ import { Search, Filter, Star, Download, Eye } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-interface Content {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  thumbnail: string;
-  category: {
-    id: string;
-    name: string;
-  };
-  rating: number;
-  downloads: number;
-  views: number;
-  createdAt: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  description?: string;
-}
-
 export default function ContentGrid() {
+  const searchParams = useSearchParams();
+  const queryQ = searchParams.get("q") ?? "";
+
   const [contents, setContents] = useState<Content[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryRef[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "popular" | "rating">("newest");
+  const [searchTerm, setSearchTerm] = useState(queryQ);
+  const [sortBy, setSortBy] = useState<"newest" | "popular" | "rating">(
+    "newest"
+  );
+
+  useEffect(() => {
+    setSearchTerm(queryQ);
+  }, [queryQ]);
 
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setErrorMessage(null);
+
         const [contentsData, categoriesData] = await Promise.all([
           getContents({
             categoryName: selectedCategory || undefined,
@@ -58,20 +56,30 @@ export default function ContentGrid() {
         const sortedContents = [...contentsData];
         switch (sortBy) {
           case "newest":
-            sortedContents.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            sortedContents.sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            );
             break;
           case "popular":
-            sortedContents.sort((a, b) => b.downloads - a.downloads);
+            sortedContents.sort(
+              (a, b) => (b.downloads ?? 0) - (a.downloads ?? 0)
+            );
             break;
           case "rating":
-            sortedContents.sort((a, b) => b.rating - a.rating);
+            sortedContents.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
             break;
         }
 
         setContents(sortedContents);
         setCategories(categoriesData);
       } catch (error) {
-        console.error("Failed to fetch data:", error);
+        if (process.env.NODE_ENV === "development") {
+           
+          console.error("Failed to fetch data:", error);
+        }
+        setErrorMessage("Không thể tải dữ liệu. Vui lòng thử lại sau.");
       } finally {
         setLoading(false);
       }
@@ -102,6 +110,12 @@ export default function ContentGrid() {
 
   return (
     <div className="space-y-6">
+      {errorMessage ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      ) : null}
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex flex-wrap gap-2">
@@ -123,11 +137,16 @@ export default function ContentGrid() {
             </Button>
           ))}
         </div>
-        
+
         <div className="flex gap-2">
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "newest" || v === "popular" || v === "rating") {
+                setSortBy(v);
+              }
+            }}
             className="px-3 py-1 border rounded-md text-sm"
           >
             <option value="newest">Mới nhất</option>
@@ -157,7 +176,10 @@ export default function ContentGrid() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {contents.map((content) => (
-            <Card key={content.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card
+              key={content.id}
+              className="overflow-hidden hover:shadow-lg transition-shadow"
+            >
               <div className="relative h-48">
                 <Image
                   src={content.thumbnail || "/placeholder.jpg"}
@@ -169,32 +191,36 @@ export default function ContentGrid() {
                   {content.category.name}
                 </Badge>
               </div>
-              
+
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg line-clamp-2">{content.title}</CardTitle>
+                <CardTitle className="text-lg line-clamp-2">
+                  {content.title}
+                </CardTitle>
                 <CardDescription className="line-clamp-2">
                   {content.description}
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-medium">{content.rating.toFixed(1)}</span>
+                    <span className="text-sm font-medium">
+                      {(content.rating ?? 0).toFixed(1)}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <Download className="h-3 w-3" />
-                      <span>{content.downloads}</span>
+                      <span>{content.downloads ?? 0}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
-                      <span>{content.views}</span>
+                      <span>{content.views ?? 0}</span>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-bold text-primary">
                     {new Intl.NumberFormat("vi-VN", {

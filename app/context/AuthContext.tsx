@@ -4,16 +4,9 @@ import { createContext, useContext, useEffect, useState } from "react";
 import * as authApi from "@/app/services/auth";
 import { toast } from "sonner";
 import { isTokenExpired, shouldRefreshToken } from "@/lib/tokenUtils";
-
-type User = {
-  _id?: string;
-  id: string;
-  email: string;
-  username?: string;
-  avatar?: string;
-  role?: "user" | "admin" | "collaborator";
-  collaboratorStatus?: "pending" | "approved" | "rejected" | null;
-};
+import { debugError, debugLog } from "@/lib/debug";
+import { clearSessionCookie, setSessionCookie } from "@/lib/auth-cookie";
+import type { User } from "@/types";
 
 type AuthContextType = {
   user: User | null;
@@ -33,7 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ================= INIT AUTH =================
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -41,13 +33,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userStr = localStorage.getItem("user");
 
         if (!token || !userStr) {
+          clearSessionCookie();
           setLoading(false);
           return;
         }
 
-        // Check if token is expired
         if (isTokenExpired(token)) {
-          console.log("Token expired, attempting refresh...");
+          debugLog("Token expired, attempting refresh...");
           const refreshSuccess = await handleRefreshToken();
           if (!refreshSuccess) {
             setLoading(false);
@@ -55,127 +47,97 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        const user = JSON.parse(userStr);
-        setUser(user);
+        setUser(JSON.parse(userStr));
+        setSessionCookie();
       } catch (error) {
-        console.error("Auth initialization error:", error);
+        debugError("Auth initialization error:", error);
         localStorage.clear();
+        clearSessionCookie();
       } finally {
         setLoading(false);
       }
     };
 
-    // Only run on client side
     if (typeof window !== "undefined") {
       initAuth();
     }
   }, []);
 
-  // ================= AUTO REFRESH TOKEN =================
   useEffect(() => {
     if (!user) return;
 
     const checkTokenExpiry = () => {
       const token = localStorage.getItem("accessToken");
       if (token && shouldRefreshToken(token)) {
-        console.log("Token expiring soon, refreshing...");
+        debugLog("Token expiring soon, refreshing...");
         handleRefreshToken();
       }
     };
 
-    // Check every minute
     const interval = setInterval(checkTokenExpiry, 60000);
-
     return () => clearInterval(interval);
   }, [user]);
 
-  // ================= LOGIN =================
   const login = async (email: string, password: string, retryCount = 0) => {
     try {
-      console.log("🔐 Attempting login with:", { email, password: "***" });
-      console.log("🌐 API URL:", process.env.NEXT_PUBLIC_API_URL);
-
       const res = await authApi.login({ email, password });
-      console.log("✅ Login response:", res);
-
-      // Handle both mock and real API responses
       const { accessToken, refreshToken, user: userData } = res.data || res;
-      console.log("🔑 Tokens received:", {
-        accessToken: "***",
-        refreshToken: "***",
-      });
 
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
 
-      // Use user data from login response or fetch profile
       let profile = userData;
       if (!profile) {
-        console.log("👤 Fetching user profile...");
         profile = await authApi.getProfile();
-        console.log("✅ Profile fetched:", profile);
-      } else {
-        console.log("✅ Using user data from login response:", profile);
       }
 
       setUser(profile);
       localStorage.setItem("user", JSON.stringify(profile));
-      console.log("🎉 Login successful!");
+      setSessionCookie();
     } catch (error) {
-      console.error("❌ Login failed:", error);
+      debugError("Login failed:", error);
 
-      // Retry logic for 500 errors
-      if (error && typeof error === "object" && "response" in error) {
-        const axiosError = error as any;
-
-        // Retry once for 500 errors (server issues)
-        if (axiosError.response?.status === 500 && retryCount === 0) {
-          console.log("🔄 Retrying login due to server error...");
-          await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
-          return login(email, password, retryCount + 1);
-        }
-
-        console.error("Axios error response:", axiosError.response);
-        console.error("Axios error status:", axiosError.response?.status);
-        console.error("Axios error data:", axiosError.response?.data);
-      }
-
-      // Log detailed error information
-      if (error instanceof Error) {
-        console.error("Error message:", error.message);
-        console.error("Error stack:", error.stack);
+      if (
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        (error as { response?: { status?: number } }).response?.status === 500 &&
+        retryCount === 0
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return login(email, password, retryCount + 1);
       }
 
       throw error;
     }
   };
 
-  // ================= LOGOUT =================
   const logout = async () => {
     try {
       await authApi.logout();
     } finally {
       localStorage.clear();
+      clearSessionCookie();
       setUser(null);
       toast.success("Đăng xuất thành công");
     }
   };
 
-  // ================= UPDATE USER =================
   const updateUser = (u: User) => {
     setUser(u);
     localStorage.setItem("user", JSON.stringify(u));
   };
 
-  // ================= REFRESH TOKEN =================
   const handleRefreshToken = async (): Promise<boolean> => {
     try {
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) {
+      const storedRefreshToken = localStorage.getItem("refreshToken");
+      if (!storedRefreshToken) {
         return false;
       }
 
-      const response = await authApi.refreshToken({ refreshToken });
+      const response = await authApi.refreshToken({
+        refreshToken: storedRefreshToken,
+      });
       const { accessToken, refreshToken: newRefreshToken } = response;
 
       localStorage.setItem("accessToken", accessToken);
@@ -183,16 +145,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("refreshToken", newRefreshToken);
       }
 
+      setSessionCookie();
       return true;
     } catch (error) {
-      console.error("Refresh token failed:", error);
-      // Force logout on refresh failure
+      debugError("Refresh token failed:", error);
       await logout();
       return false;
     }
   };
 
-  // Role checking functions
   const isAdmin = () => user?.role === "admin";
   const isCollaborator = () => user?.role === "collaborator";
   const isUser = () => user?.role === "user" || !user?.role;
@@ -216,7 +177,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ================= HOOK =================
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) {

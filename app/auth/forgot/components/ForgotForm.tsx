@@ -49,13 +49,18 @@ export default function ForgotForm({ onSuccess }: ForgotFormProps) {
 
       toast.success("Mã OTP đã được gửi đến email của bạn");
       onSuccess(email);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (process.env.NODE_ENV === "development") {
+         
         console.error("Forgot Password Error:", error);
       }
 
+      const err = error as {
+        response?: { data?: { message?: string } };
+      };
+
       const errorMessage =
-        error?.response?.data?.message ||
+        err?.response?.data?.message ||
         "Không thể gửi OTP. Vui lòng kiểm tra email và thử lại.";
       toast.error(errorMessage);
     }

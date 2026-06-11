@@ -1,6 +1,5 @@
 import ContentDetail from "@/app/pages/detail/[id]/components/ContentDetail";
 import ReviewComment from "@/app/pages/detail/[id]/components/ReviewComment";
-import next from "next";
 
 export default function DetailId() {
   return (

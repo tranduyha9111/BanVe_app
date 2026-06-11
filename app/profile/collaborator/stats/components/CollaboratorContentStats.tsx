@@ -35,17 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getContentStats } from "@/app/services/contentstats";
-
-interface ContentStat {
-  id: string;
-  title: string;
-  price: number;
-  downloads: number;
-  views: number;
-  revenue: number;
-  createdAt: string;
-  lastDownloadAt?: string;
-}
+import type { ContentStat } from "@/types";
 
 export default function CollaboratorContentStats() {
   const [stats, setStats] = useState<ContentStat[]>([]);

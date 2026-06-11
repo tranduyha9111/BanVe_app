@@ -1,15 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCategories, createCategory, updateCategory, deleteCategory } from "@/app/services/categories";
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from "@/app/services/categories";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Plus, Edit, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,7 +70,7 @@ export default function CategoryManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       if (editingCategory) {
         await updateCategory(editingCategory.id, formData);
@@ -58,7 +79,7 @@ export default function CategoryManagement() {
         await createCategory(formData);
         toast.success("Tạo danh mục thành công!");
       }
-      
+
       fetchCategories();
       setIsCreateDialogOpen(false);
       setEditingCategory(null);
@@ -115,13 +136,15 @@ export default function CategoryManagement() {
           <h2 className="text-2xl font-bold text-gray-900">Quản lý danh mục</h2>
           <p className="text-gray-600">Quản lý các danh mục sản phẩm</p>
         </div>
-        
+
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingCategory(null);
-              setFormData({ name: "", description: "" });
-            }}>
+            <Button
+              onClick={() => {
+                setEditingCategory(null);
+                setFormData({ name: "", description: "" });
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Thêm danh mục
             </Button>
@@ -134,10 +157,14 @@ export default function CategoryManagement() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Tên danh mục</label>
+                <label className="block text-sm font-medium mb-2">
+                  Tên danh mục
+                </label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="Nhập tên danh mục"
                   required
                 />
@@ -146,7 +173,9 @@ export default function CategoryManagement() {
                 <label className="block text-sm font-medium mb-2">Mô tả</label>
                 <Textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   placeholder="Nhập mô tả danh mục"
                   rows={3}
                 />
@@ -194,7 +223,8 @@ export default function CategoryManagement() {
                   <div className="flex-1">
                     <CardTitle className="text-lg">{category.name}</CardTitle>
                     <p className="text-sm text-gray-600 mt-1">
-                      Tạo ngày {new Date(category.createdAt).toLocaleDateString("vi-VN")}
+                      Tạo ngày{" "}
+                      {new Date(category.createdAt).toLocaleDateString("vi-VN")}
                     </p>
                   </div>
                   <div className="flex gap-1">
@@ -215,7 +245,8 @@ export default function CategoryManagement() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Bạn có chắc chắn muốn xóa danh mục "{category.name}"? Hành động này không thể hoàn tác.
+                            Bạn có chắc chắn muốn xóa danh mục {category.name} ?
+                            Hành động này không thể hoàn tác.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

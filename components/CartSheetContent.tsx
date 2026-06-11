@@ -10,23 +10,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
 import { getCart, removeFromCart, addToCart } from "@/app/services/cart";
-
-interface CartItem {
-  id: string;
-  contentId: string;
-  content: {
-    id: string;
-    title: string;
-    description?: string;
-    price?: number;
-    image?: string;
-    category?: {
-      name: string;
-    };
-  };
-  quantity: number;
-  createdAt: string;
-}
+import type { CartItem } from "@/types";
 
 export default function CartSheetContent() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);

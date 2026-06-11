@@ -33,22 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getAllContentStats } from "@/app/services/contentstats";
-
-interface ContentStat {
-  id: string;
-  title: string;
-  price: number;
-  downloads: number;
-  views: number;
-  revenue: number;
-  collaborator: {
-    id: string;
-    username: string;
-    email: string;
-  };
-  createdAt: string;
-  lastDownloadAt?: string;
-}
+import type { ContentStat } from "@/types";
 
 export default function AdminContentStats() {
   const [stats, setStats] = useState<ContentStat[]>([]);
@@ -255,8 +240,12 @@ export default function AdminContentStats() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{stat.collaborator.username}</div>
-                        <div className="text-sm text-gray-500">{stat.collaborator.email}</div>
+                        <div className="font-medium">
+                          {stat.collaborator?.username ?? "—"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {stat.collaborator?.email ?? ""}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>

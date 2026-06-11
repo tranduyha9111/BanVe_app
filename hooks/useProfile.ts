@@ -4,16 +4,10 @@ import { useEffect, useState } from "react";
 import { getProfile } from "@/app/services/auth";
 import { useAuth } from "@/app/context/AuthContext";
 import { toast } from "sonner";
+import { getAxiosErrorMessage } from "@/lib/errors";
+import type { Profile } from "@/types";
 
-export type Profile = {
-  id: string;
-  email: string;
-  username: string;
-  role?: 'user' | 'admin' | 'collaborator';
-  collaboratorStatus?: 'pending' | 'approved' | 'rejected' | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type { Profile };
 
 export function useProfile() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -22,7 +16,6 @@ export function useProfile() {
   const { user, updateUser } = useAuth();
 
   useEffect(() => {
-    // ✅ Nếu chưa đăng nhập thì không fetch
     if (!user) {
       setLoading(false);
       return;
@@ -34,7 +27,6 @@ export function useProfile() {
         const data = await getProfile();
         setProfile(data);
 
-        // ✅ Sync với AuthContext nếu có thay đổi
         if (
           data.username !== user.username ||
           data.email !== user.email ||
@@ -48,13 +40,11 @@ export function useProfile() {
             collaboratorStatus: data.collaboratorStatus,
           });
         }
-      } catch (err: any) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Fetch profile error:", err);
-        }
-
-        const errorMessage =
-          err?.response?.data?.message || "Không thể tải thông tin người dùng";
+      } catch (err: unknown) {
+        const errorMessage = getAxiosErrorMessage(
+          err,
+          "Không thể tải thông tin người dùng"
+        );
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -72,11 +62,8 @@ export function useProfile() {
       setLoading(true);
       const data = await getProfile();
       setProfile(data);
-    } catch (err: any) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Refetch profile error:", err);
-      }
-      toast.error("Không thể tải lại thông tin");
+    } catch (err: unknown) {
+      toast.error(getAxiosErrorMessage(err, "Không thể tải lại thông tin"));
     } finally {
       setLoading(false);
     }
